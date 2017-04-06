@@ -1,0 +1,9 @@
+ofxAudioDecoder
+ofxMSATimer
+ofxRange
+ofxTextInputField
+ofxTimecode
+ofxTimeline
+ofxTween
+ofxVideoRecorder
+ofxXmlSettings
