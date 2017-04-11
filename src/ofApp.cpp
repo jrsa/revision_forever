@@ -104,7 +104,7 @@ void ofApp::setup() {
     
     drawTimeline = false;
     
-    micros.load("/Users/jrsa/Desktop/SCRATCH/dome/dry_dome_2ksquare.mov");
+    micros.load("dry_dome_2ksquare.mov");
     micros.setUseTexture(true);
     micros.setVolume(0.0);
     micros.play();
