@@ -6,6 +6,8 @@ bin/data/*
 !bin/data/*.frag
 !bin/data/*.vert
 
+.DS_Store
+domecombined.xcodeproj/xcuserdata/*
 domecombined.xcodeproj/project.xcworkspace
 domecombined.xcodeproj/project.xcworkspace/*
 obj/
