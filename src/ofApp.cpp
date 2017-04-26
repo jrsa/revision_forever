@@ -1,5 +1,5 @@
 #include "ofApp.h"
-
+#include <cstdlib>
 
 void ofApp::loadShaders() {
     flow.load("flow.vert", "flow.frag");
@@ -91,11 +91,11 @@ void ofApp::loadFbos(int w, int h) {
 
 
 void ofApp::setup() {
-    framerate = 23.98;
+//    framerate = 23.98;
     
     timeline.setup();
     timeline.setLoopType(OF_LOOP_NORMAL);
-    timeline.setDurationInSeconds(30);
+    timeline.setDurationInSeconds(180);
     
     timeline.addCurves(TIMELINE_FEEDBACK_MIX, ofRange(0, 1));
     timeline.addCurves(TIMELINE_DRY_MIX, ofRange(0, 1));
@@ -103,26 +103,37 @@ void ofApp::setup() {
     ofAddListener(timeline.events().bangFired, this, &ofApp::receivedBang);
     
     drawTimeline = false;
+    iosdraw = false;
+    enableBump = false;
     
-    micros.load("dry_dome_2ksquare.mov");
-    micros.setUseTexture(true);
-    micros.setVolume(0.0);
-    micros.play();
+    videoTrack = timeline.addVideoTrack("ios", "iphone_cap_1.mov");
+    microsTrack = timeline.addVideoTrack("micro", "dry_dome_2ksquare.mov");
     
-    w = micros.getWidth();
-    h = micros.getHeight();
-    
-    videoTrack = timeline.addVideoTrack("Video", "iphone_cap_1.mov");
-    
+    // ios video
     ofPtr<ofVideoPlayer> pplyr = videoTrack->getPlayer();
+    pplyr->getPlayer()->setLoopState(OF_LOOP_NORMAL);
+
     
-    timeline.setFrameRate(pplyr->getTotalNumFrames() / pplyr->getDuration());
-    timeline.setDurationInFrames(pplyr->getTotalNumFrames());
-    timeline.setTimecontrolTrack(videoTrack);
+    // microscope video
+    pplyr = microsTrack->getPlayer();
+//    ofPtr<ofVideoPlayer> microplyr = microsTrack->getPlayer();
+    
+    framerate = pplyr->getTotalNumFrames() / pplyr->getDuration();
+    timeline.setFrameRate(framerate);
+//    timeline.setDurationInFrames(pplyr->getTotalNumFrames());
+//    timeline.setTimecontrolTrack(videoTrack);
     pplyr->setUseTexture(true);
     
+    
     movTex.allocate(pplyr->getWidth(), pplyr->getHeight(), GL_RGBA);
+    w = pplyr->getWidth();
+    h = pplyr->getHeight();
+    
+    out_w = w;// /2;
+    out_h = h;// /2;
+    
     createPlane();
+    iosdraw = true;
     
     downsampleAmt = 1.0/64.0;
     ds_w = pplyr->getWidth() * downsampleAmt;
@@ -139,7 +150,7 @@ void ofApp::setup() {
     record_fbo.setUseTexture(true);
     record_pix.allocate(w, h, 3);
     
-    ofSetWindowShape(w, h);
+    ofSetWindowShape(out_w, out_h);
     ofSetFrameRate(framerate);
     
     vidRecorder.setVideoCodec("prores");
@@ -154,49 +165,60 @@ void ofApp::setup() {
     
     cam.setDistance(1280);
     
-    timeline.play();
+//    timeline.play();
 }
 
 
 void ofApp::update() {
-    if (record) {
-        vidRecorder.addFrame(record_pix);
-    }
-    
-    micros.update();
-//    ios_movie.update();
+//    if (record) {
+//        vidRecorder.addFrame(record_pix);
+//    }
     
     ofPtr<ofVideoPlayer> plr = videoTrack->getPlayer();
-    
-//    plr->update();
     
     if(plr->isFrameNew()) {
         movTex = plr->getTexture();
     }
     
-    if (micros.isFrameNew()) {
+    plr = microsTrack->getPlayer();
+    if(plr->isFrameNew()) {
         lastTex = greyTex;
-        greyTex.loadData(micros.getPixels());
+        greyTex = plr->getTexture();
     }
 }
 
 void ofApp::draw() {
-    if(record) {
+//    if(record) {
         record_fbo.begin();
+//    }
+    
+    if(iosdraw) {
+        dest_fbo.begin();
+        ofClear(0, 0, 0, 0);
+        drawPlane();
+        dest_fbo.end();
+        
+        drymixer_fbo.begin();
+        drymixer.begin();
+        drymixer.setUniformTexture("tex1", dest_fbo.getTexture(), 1);
+        drymixer.setUniform1f("mixAmnt", timeline.getValue(TIMELINE_DRY_MIX));
+        greyTex.draw(0, 0); // microscope footage
+        drymixer.end();
+        drymixer_fbo.end();
     }
-    
-    dest_fbo.begin();
-    ofClear(0, 0, 0, 0);
-    drawPlane();
-    dest_fbo.end();
-    
-    drymixer_fbo.begin();
-    drymixer.begin();
-    drymixer.setUniformTexture("tex1", dest_fbo.getTexture(), 1);
-    drymixer.setUniform1f("mixAmnt", timeline.getValue(TIMELINE_DRY_MIX));
-    greyTex.draw(0, 0); // microscope footage
-    drymixer.end();
-    drymixer_fbo.end();
+    else {
+        dest_fbo.begin();
+        ofClear(0, 0, 0, 0);
+//        drawPlane();
+        dest_fbo.end();
+        
+        drymixer_fbo.begin();
+        drymixer.begin();
+        drymixer.setUniform1f("mixAmnt", 0.0);
+        greyTex.draw(0, 0); // microscope footage
+        drymixer.end();
+        drymixer_fbo.end();
+    }
     
     flow_fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     flow_fbo.begin(); //flow
@@ -334,30 +356,34 @@ void ofApp::draw() {
     hsv_fbo.draw(0, 0); // end of feedback chain
     fbmixer.end();
     fbmixer_fbo.end();
+
+    if(enableBump) {
+        bump_fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
+        bump_fbo.begin();
+        bump.begin();
+        bump.setUniform2f("res", w, h);
+    //    float posX = cos(ofGetElapsedTimef()*0.1) * w + w*0.5;
+    //    float posY = sin(ofGetElapsedTimef()*0.1) * h + h*0.5;
+        bump.setUniform2f("mouse", mouseX, -mouseY);
+    //    float normalStrength = ofMap(mix, 0.15, 0.9, 200.0, 1.0);
+        bump.setUniform1f("normalStrength", 150.0);
+        bump.setUniform1f("lightWidth", w*10);
+        bump.setUniform1f("lightBrightness", 0.75);
+        bump.setUniform1f("shinAmnt", 0.1);
+        fbmixer_fbo.draw(0, 0);
+        bump.end();
+        bump_fbo.end();
     
-    bump_fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
-    bump_fbo.begin();
-    bump.begin();
-    bump.setUniform2f("res", w, h);
-//    float posX = cos(ofGetElapsedTimef()*0.1) * w + w*0.5;
-//    float posY = sin(ofGetElapsedTimef()*0.1) * h + h*0.5;
-    bump.setUniform2f("mouse", mouseX, -mouseY);
-//    float normalStrength = ofMap(mix, 0.15, 0.9, 200.0, 1.0);
-    bump.setUniform1f("normalStrength", 150.0);
-    bump.setUniform1f("lightWidth", w*10);
-    bump.setUniform1f("lightBrightness", 0.75);
-    bump.setUniform1f("shinAmnt", 0.1);
-    fbmixer_fbo.draw(0, 0);
-    bump.end();
-    bump_fbo.end();
-    
-    bump_fbo.draw(0, 0);
-    
-    if(record) {
-        record_fbo.readToPixels(record_pix);
-        record_fbo.end();
-        record_fbo.draw(0, 0);
+        bump_fbo.draw(0, 0);
+    } else {
+        fbmixer_fbo.draw(0, 0);
     }
+    
+//    if(record) {
+//        record_fbo.readToPixels(record_pix);
+        record_fbo.end();
+        record_fbo.draw(0, 0, out_w, out_h);
+//    }
     
     if (drawTimeline) {
         timeline.draw();
@@ -411,9 +437,17 @@ void ofApp::keyPressed(int key) {
 
 void ofApp::keyReleased(int key) {
     switch (key) {
+        case 'b': {
+            enableBump = !enableBump;
+            break;
+        }
         case 'c': {
             record = false;
             vidRecorder.close();
+            break;
+        }
+        case 'i': {
+            iosdraw = !iosdraw;
             break;
         }
         case 'r': {
@@ -444,9 +478,12 @@ void ofApp::keyReleased(int key) {
 void ofApp::receivedBang(ofxTLBangEventArgs &bang) {
     ofLogNotice("Bang fired from track " + bang.flag);
     
-    if(bang.flag.compare(TIMELINE_CLEARFBOS)) {
-        clearFbos();
-    }
+
+    clearFbos();
+
+    int frame = std::atoi(bang.flag.c_str());
+    microsTrack->getPlayer()->setFrame(frame);
+    microsTrack->getPlayer()->play();
 }
 
 void ofApp::createPlane() {
@@ -481,12 +518,12 @@ void ofApp::mouseReleased(int x, int y, int button) {
 }
 
 void ofApp::windowResized(int wi, int hei) {
-    w = wi;
-    h = hei;
-    
-    loadFbos(w, h);
-    loadShaders();
-    clearFbos();
+//    w = wi;
+//    h = hei;
+//    
+//    loadFbos(w, h);
+//    loadShaders();
+//    clearFbos();
 }
 
 void ofApp::gotMessage(ofMessage msg) {

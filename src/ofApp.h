@@ -37,7 +37,7 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     
-    int w, h;
+    int w, h, out_w, out_h;
     float x_off, y_off, w_off, h_off;
     
     bool record;
@@ -51,8 +51,8 @@ public:
     ofFbo record_fbo;
     ofPixels record_pix;
     
-    ofVideoPlayer micros; // currently the microscope dry footage
-    ofxTLVideoTrack* videoTrack; // testing iOS
+//    ofVideoPlayer micros; // currently the microscope dry footage
+    ofxTLVideoTrack* videoTrack, *microsTrack; // testing iOS
         
     ofTexture greyTex, movieTex, lastTex;
     ofImage lastFrame, greyImg;
@@ -66,6 +66,8 @@ public:
     ofShader fbmixer, drymixer;
     ofFbo fbmixer_fbo, drymixer_fbo;
 
+    bool enableBump;
+    bool iosdraw;
     bool drawTimeline;
     ofxTimeline timeline;
     ofxTLEmptyTrack* emptyTrack;
