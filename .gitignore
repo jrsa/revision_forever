@@ -12,3 +12,5 @@ domecombined.xcodeproj/project.xcworkspace
 domecombined.xcodeproj/project.xcworkspace/*
 obj/
 obj/*
+
+build/
