@@ -91,14 +91,18 @@ void ofApp::loadFbos(int w, int h) {
 
 
 void ofApp::setup() {
-//    framerate = 23.98;
+    framerate = 23.98;
     
     timeline.setup();
     timeline.setLoopType(OF_LOOP_NORMAL);
-    timeline.setDurationInSeconds(180);
+//    timeline.setDurationInSeconds(180);
     
     timeline.addCurves(TIMELINE_FEEDBACK_MIX, ofRange(0, 1));
-    timeline.addCurves(TIMELINE_DRY_MIX, ofRange(0, 1));
+    timeline.addCurves(TIMELINE_SV, ofRange(0.75, 2));
+    timeline.addCurves(TIMELINE_REPOS, ofRange(10, 80));
+    timeline.addCurves(TIMELINE_HUEA, ofRange(0, 1));
+    timeline.addCurves(TIMELINE_FLOWSCALE, ofRange(0, 0.4));
+//    timeline.addCurves(TIMELINE_DRY_MIX, ofRange(0, 1));
     timeline.addFlags(TIMELINE_CLEARFBOS);
     ofAddListener(timeline.events().bangFired, this, &ofApp::receivedBang);
     
@@ -106,21 +110,20 @@ void ofApp::setup() {
     iosdraw = false;
     enableBump = false;
     
-    videoTrack = timeline.addVideoTrack("ios", "iphone_cap_1.mov");
-    microsTrack = timeline.addVideoTrack("micro", "dry_dome_2ksquare.mov");
+//    videoTrack = timeline.addVideoTrack("ios", "/Users/jrsa/Desktop/SCRATCH/dome/iphone_cap_1.mov");
+    microsTrack = timeline.addVideoTrack("micro", "/Users/jrsa/Desktop/SCRATCH/dry_dome_2ksquare.mov");
     
     // ios video
-    ofPtr<ofVideoPlayer> pplyr = videoTrack->getPlayer();
-    pplyr->getPlayer()->setLoopState(OF_LOOP_NORMAL);
+//    ofPtr<ofVideoPlayer> pplyr = videoTrack->getPlayer();
+//    pplyr->getPlayer()->setLoopState(OF_LOOP_NORMAL);
 
-    
     // microscope video
-    pplyr = microsTrack->getPlayer();
+    ofPtr<ofVideoPlayer> pplyr = microsTrack->getPlayer();
 //    ofPtr<ofVideoPlayer> microplyr = microsTrack->getPlayer();
     
     framerate = pplyr->getTotalNumFrames() / pplyr->getDuration();
     timeline.setFrameRate(framerate);
-//    timeline.setDurationInFrames(pplyr->getTotalNumFrames());
+    timeline.setDurationInFrames(pplyr->getTotalNumFrames());
 //    timeline.setTimecontrolTrack(videoTrack);
     pplyr->setUseTexture(true);
     
@@ -133,7 +136,7 @@ void ofApp::setup() {
     out_h = h;// /2;
     
     createPlane();
-    iosdraw = true;
+    iosdraw = false;
     
     downsampleAmt = 1.0/64.0;
     ds_w = pplyr->getWidth() * downsampleAmt;
@@ -170,17 +173,17 @@ void ofApp::setup() {
 
 
 void ofApp::update() {
-//    if (record) {
-//        vidRecorder.addFrame(record_pix);
-//    }
-    
-    ofPtr<ofVideoPlayer> plr = videoTrack->getPlayer();
-    
-    if(plr->isFrameNew()) {
-        movTex = plr->getTexture();
+    if (record) {
+        vidRecorder.addFrame(record_pix);
     }
     
-    plr = microsTrack->getPlayer();
+//    ofPtr<ofVideoPlayer> plr = videoTrack->getPlayer();
+    
+//    if(plr->isFrameNew()) {
+//        movTex = plr->getTexture();
+//    }
+    
+     ofPtr<ofVideoPlayer> plr = microsTrack->getPlayer();
     if(plr->isFrameNew()) {
         lastTex = greyTex;
         greyTex = plr->getTexture();
@@ -191,7 +194,7 @@ void ofApp::draw() {
 //    if(record) {
         record_fbo.begin();
 //    }
-    
+    iosdraw = false;
     if(iosdraw) {
         dest_fbo.begin();
         ofClear(0, 0, 0, 0);
@@ -275,7 +278,8 @@ void ofApp::draw() {
     glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR);
     
     repos.begin();
-    repos.setUniform2f("amt", 50.0, 50.0);
+    float reposAmt = timeline.getValue(TIMELINE_REPOS);
+    repos.setUniform2f("amt", reposAmt, reposAmt);
     repos.setUniformTexture("tex1", blurY_fbo.getTexture(), 1);
     
     fbmixer_fbo.draw(0, 0);
@@ -325,8 +329,12 @@ void ofApp::draw() {
         2.0/8.0, 2.0/8.0, 2.0/8.0
     };
     
-    kernel_shader.setUniform2f("step", 1.0, 1.0);
+    repos.setUniformTexture("tex1", blurY_fbo.getTexture(), 1);
+//    kernel_shader.setUniform2f("step", 1.0, 1.0);
     kernel_shader.setUniform1fv("kernel", edge_kernel, 9);
+    
+    kernel_shader.setUniform1f("hueAngleOffset", timeline.getValue(TIMELINE_HUEA));
+    kernel_shader.setUniform1f("flowScaleScale", timeline.getValue(TIMELINE_FLOWSCALE));
     
     contrast_fbo.draw(0, 0);
     kernel_shader.end();
@@ -336,8 +344,8 @@ void ofApp::draw() {
     hsv_fbo.begin();
     hsv.begin();
     
-    hsv.setUniform1f("hue", 0.00);
-    hsv.setUniform1f("sv",  1.01);
+    hsv.setUniform1f("hue", 0.01);
+    hsv.setUniform1f("sv", timeline.getValue(TIMELINE_SV));
     
     kernel_fbo.draw(0, 0);
     
@@ -380,7 +388,7 @@ void ofApp::draw() {
     }
     
 //    if(record) {
-//        record_fbo.readToPixels(record_pix);
+        record_fbo.readToPixels(record_pix);
         record_fbo.end();
         record_fbo.draw(0, 0, out_w, out_h);
 //    }
@@ -446,10 +454,13 @@ void ofApp::keyReleased(int key) {
             vidRecorder.close();
             break;
         }
+// i broke this
+#if 0
         case 'i': {
             iosdraw = !iosdraw;
             break;
         }
+#endif
         case 'r': {
             record = !record;
             if (record && !vidRecorder.isInitialized()){
@@ -468,6 +479,10 @@ void ofApp::keyReleased(int key) {
         }
         case 'u': {
             clearFbos();
+            break;
+        }
+        case '0': {
+            timeline.setCurrentTimeMillis(0);
             break;
         }
         default:

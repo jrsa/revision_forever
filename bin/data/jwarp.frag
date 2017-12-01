@@ -1,6 +1,10 @@
 uniform sampler2DRect tex0;
 uniform sampler2DRect tex1;
-uniform vec2 step;
+
+uniform float hueAngleOffset;
+uniform float flowScaleScale;
+
+// uniform vec2 step;
 uniform float kernel[9];
 
 vec2 offset[9];
@@ -27,11 +31,16 @@ void main() {
 	vec2 uv = gl_TexCoord[0].xy;
 
 	vec3 hsvIn = rgb2hsv(texture2DRect(tex0, uv).rgb);
-	float angle = hsvIn.g * 0.009;
-	mat2 rot = mat2(cos(angle), sin(angle), -sin(angle), cos(angle));
+    vec3 flow = rgb2hsv(texture2DRect(tex1, uv).rgb);
+	float angle = (flow.r + hueAngleOffset) * 0.009;
+    
+    float scaleAmt = flow.g * flowScaleScale;
+    mat2 scale = mat2(1., scaleAmt, scaleAmt, 1.);
+	mat2 rot = mat2(cos(angle), sin(angle),  -sin(angle), cos(angle));
 	vec2 warpedUv = uv * rot;
+    warpedUv *= scale;
 
-	vec2 step = hsvIn.g * step;
+	vec2 step = vec2(hsvIn.g);// * 2.0;// * step;
 
 	offset[0] = vec2(-step.x, -step.y); // top left
 	offset[1] = vec2(    0.0, -step.y); // top middle

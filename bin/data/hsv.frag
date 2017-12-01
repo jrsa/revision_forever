@@ -34,7 +34,7 @@ void main(void) {
   }
 
   hsv.y *= sv;
-  hsv.z *= sv;
+  // hsv.z *= sv;
 
   vec4 rgb = vec4(hsv2rgb(hsv.xyz), 1.0);
 

@@ -9,7 +9,13 @@
 
 // timeline names
 #define TIMELINE_FEEDBACK_MIX "feedback mix"
+
+#define TIMELINE_SV "sv"
+#define TIMELINE_REPOS "repos"
 #define TIMELINE_DRY_MIX "dry mix"
+#define TIMELINE_HUEA "huea"
+#define TIMELINE_FLOWSCALE "flowscale"
+
 #define TIMELINE_CLEARFBOS "clear fbos"
 
 class ofApp : public ofBaseApp{

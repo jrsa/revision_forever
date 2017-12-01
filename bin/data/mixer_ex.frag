@@ -15,5 +15,5 @@ void main()
 
     vec4 flow_map = texture2DRect(tex2, texCoord0);
     
-    gl_FragColor = mix(tex0_color, tex1_color, mixAmnt * flow_map.a);//flow_map.a);
+    gl_FragColor = mix(tex0_color, tex1_color, mixAmnt * flow_map.a);
 }
