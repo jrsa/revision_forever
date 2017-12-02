@@ -115,6 +115,7 @@ void ofApp::update() {
 }
 
 void ofApp::draw() {
+#if 0 //testing programmable pipeline stuff
     // compute hsflow values of video input
     // ----------------------------------------------------------------------------
     flow_fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
@@ -213,6 +214,18 @@ void ofApp::draw() {
     }
     record_fbo.end();
     record_fbo.draw(0, 0, out_w, out_h);
+#else
+    record_fbo.begin();
+
+    gaussian.begin();
+    gaussian.setUniform2f("zoom", 1.0, 1.0);
+    gaussian.setUniform1f("blurAmnt", 1.0);
+    vid_in.draw(0, 0);
+    gaussian.end();
+
+    record_fbo.end();
+    record_fbo.draw(0, 0, out_w, out_h);
+#endif
     
     if (drawTimeline) {
         timeline.draw();

@@ -1,8 +1,8 @@
 #include "ofMain.h"
 #include "ofApp.h"
 
-#define GL_MAJOR 2
-#define GL_MINOR 1
+#define GL_MAJOR 3
+#define GL_MINOR 3
 
 //========================================================================
 int main( ){
