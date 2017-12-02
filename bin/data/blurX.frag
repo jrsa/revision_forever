@@ -1,26 +1,27 @@
+#version 330 core
+
 uniform sampler2DRect tex0;
 uniform float blurAmnt;
 
-vec4 outputColor;
+in vec2 texcoord_v;
+
+out vec4 frag_color;
 
 void main()
 {
-    vec2 texCoord0 = gl_TexCoord[0].xy;
-    vec4 color;
+    vec2 texCoord0 = texcoord_v;
+
+    frag_color = 1.0 * texture(tex0, texCoord0 + vec2(blurAmnt * -4.0, 0.0));
+    frag_color += 2.0 * texture(tex0, texCoord0 + vec2(blurAmnt * -3.0, 0.0));
+    frag_color += 3.0 * texture(tex0, texCoord0 + vec2(blurAmnt * -2.0, 0.0));
+    frag_color += 4.0 * texture(tex0, texCoord0 + vec2(blurAmnt * -1.0, 0.0));
     
-    color = 1.0 * texture2DRect(tex0, texCoord0 + vec2(blurAmnt * -4.0, 0.0));
-    color += 2.0 * texture2DRect(tex0, texCoord0 + vec2(blurAmnt * -3.0, 0.0));
-    color += 3.0 * texture2DRect(tex0, texCoord0 + vec2(blurAmnt * -2.0, 0.0));
-    color += 4.0 * texture2DRect(tex0, texCoord0 + vec2(blurAmnt * -1.0, 0.0));
+    frag_color += 5.0 * texture(tex0, texCoord0 + vec2(blurAmnt, 0.0));
     
-    color += 5.0 * texture2DRect(tex0, texCoord0 + vec2(blurAmnt, 0.0));
+    frag_color += 4.0 * texture(tex0, texCoord0 + vec2(blurAmnt * 1.0, 0.0));
+    frag_color += 3.0 * texture(tex0, texCoord0 + vec2(blurAmnt * 2.0, 0.0));
+    frag_color += 2.0 * texture(tex0, texCoord0 + vec2(blurAmnt * 3.0, 0.0));
+    frag_color += 1.0 * texture(tex0, texCoord0 + vec2(blurAmnt * 4.0, 0.0));
     
-    color += 4.0 * texture2DRect(tex0, texCoord0 + vec2(blurAmnt * 1.0, 0.0));
-    color += 3.0 * texture2DRect(tex0, texCoord0 + vec2(blurAmnt * 2.0, 0.0));
-    color += 2.0 * texture2DRect(tex0, texCoord0 + vec2(blurAmnt * 3.0, 0.0));
-    color += 1.0 * texture2DRect(tex0, texCoord0 + vec2(blurAmnt * 4.0, 0.0));
-    
-    color /= 25.0;
-    
-    gl_FragColor = color;
+    frag_color /= 25.0;
 }

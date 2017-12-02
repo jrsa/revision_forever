@@ -115,7 +115,6 @@ void ofApp::update() {
 }
 
 void ofApp::draw() {
-#if 0 //testing programmable pipeline stuff
     // compute hsflow values of video input
     // ----------------------------------------------------------------------------
     flow_fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
@@ -162,9 +161,11 @@ void ofApp::draw() {
     // ----------------------------------------------------------------------------
     repos_fbo.getTexture().setTextureMinMagFilter(GL_NEAREST, GL_NEAREST);
     repos_fbo.begin();
-    ofClear(255, 255, 255, 0);
+    ofClear(0, 0, 0, 0);
+#if 0
     glEnable(GL_BLEND);
     glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR);
+#endif
     repos.begin();
     float reposAmt = timeline.getValue(TRACK_REPOS);
     repos.setUniform2f("amt", reposAmt, reposAmt);
@@ -214,28 +215,6 @@ void ofApp::draw() {
     }
     record_fbo.end();
     record_fbo.draw(0, 0, out_w, out_h);
-#else
-    record_fbo.begin();
-
-    // ofClear(0, 0, 0, 0);
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-    flow.begin();
-    flow.setUniform2f("scale", 12.0, 12.0);
-    flow.setUniform2f("offset", 100.0, 100.0);
-    flow.setUniform1f("lambda", 100.0);
-    flow.setUniformTexture("tex1", lastTex, 1);
-
-    vid_in.draw(0, 0);
-    flow.end();
-
-    glDisable(GL_BLEND);
-
-    record_fbo.end();
-    record_fbo.draw(0, 0, out_w, out_h);
-#endif
     
     if (drawTimeline) {
         timeline.draw();

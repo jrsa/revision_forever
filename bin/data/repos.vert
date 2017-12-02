@@ -1,14 +1,18 @@
-varying vec2 texcoord0;
-varying vec2 texcoord1;
+#version 330 core
 
+uniform mat4 modelViewProjectionMatrix;
+uniform mat4 textureMatrix;
+
+in vec4 position;
+in vec2 texcoord;
+
+out vec2 texcoord_v;
 
 void main()
 {
     // perform standard transform on vertex
-    gl_Position = ftransform();
-    //gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-    
+    gl_Position = modelViewProjectionMatrix * position;
+
     // transform texcoords
-    texcoord0 = vec2(gl_TextureMatrix[0] * gl_MultiTexCoord0);
-	texcoord1 = vec2(gl_TextureMatrix[1] * gl_MultiTexCoord0);
+	texcoord_v = texcoord;
 }

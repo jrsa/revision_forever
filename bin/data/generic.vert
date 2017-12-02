@@ -1,5 +1,14 @@
+#version 330 core
+
+uniform mat4 modelViewProjectionMatrix;
+uniform mat4 textureMatrix;
+
+in vec4 position;
+in vec2 texcoord;
+
+out vec2 texcoord_v;
+
 void main() {
-    gl_Position	= gl_ModelViewProjectionMatrix * gl_Vertex; 
-    gl_FrontColor = gl_Color;
-    gl_TexCoord[0] = gl_MultiTexCoord0;
+    gl_Position = modelViewProjectionMatrix * position; 
+    texcoord_v = texcoord;
 }
