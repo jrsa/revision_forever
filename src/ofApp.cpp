@@ -217,11 +217,21 @@ void ofApp::draw() {
 #else
     record_fbo.begin();
 
-    gaussian.begin();
-    gaussian.setUniform2f("zoom", 1.0, 1.0);
-    gaussian.setUniform1f("blurAmnt", 1.0);
+    // ofClear(0, 0, 0, 0);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+    flow.begin();
+    flow.setUniform2f("scale", 12.0, 12.0);
+    flow.setUniform2f("offset", 100.0, 100.0);
+    flow.setUniform1f("lambda", 100.0);
+    flow.setUniformTexture("tex1", lastTex, 1);
+
     vid_in.draw(0, 0);
-    gaussian.end();
+    flow.end();
+
+    glDisable(GL_BLEND);
 
     record_fbo.end();
     record_fbo.draw(0, 0, out_w, out_h);

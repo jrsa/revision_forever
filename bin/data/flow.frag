@@ -1,9 +1,13 @@
+#version 330 core
+
 //Andrew Benson - andrewb@cycling74.com
 //2009
 
 // texcoords
-varying vec2 texcoord0;
-varying vec2 texcoord1;
+in vec2 texcoord0;
+in vec2 texcoord1;
+
+out vec4 color;
 
 // samplers
 uniform sampler2DRect tex0;
@@ -20,8 +24,8 @@ const vec4 lumcoeff = vec4(0.212, 0.7152, 0.0722, 0.0); //hd
 // entry point
 void main()
 {   
-	vec4 a = texture2DRect(tex0, texcoord0);
-	vec4 b = texture2DRect(tex1, texcoord1);
+	vec4 a = texture(tex0, texcoord0);
+	vec4 b = texture(tex1, texcoord1);
 
 	//?luma convert?
 	a = vec4(vec3(dot(a, lumcoeff)), 1.0);
@@ -34,11 +38,11 @@ void main()
 	vec4 curdif = b-a;
 	
 	//calculate the gradient
-	vec4 gradx = texture2DRect(tex1, texcoord1+x1)-texture2DRect(tex1, texcoord1-x1);
-	gradx += texture2DRect(tex0, texcoord0+x1)-texture2DRect(tex0, texcoord0-x1);
+	vec4 gradx = texture(tex1, texcoord1+x1)-texture(tex1, texcoord1-x1);
+	gradx += texture(tex0, texcoord0+x1)-texture(tex0, texcoord0-x1);
 	
-	vec4 grady = texture2DRect(tex1, texcoord1+y1)-texture2DRect(tex1, texcoord1-y1);
-	grady += texture2DRect(tex0, texcoord0+y1)-texture2DRect(tex0, texcoord0-y1);
+	vec4 grady = texture(tex1, texcoord1+y1)-texture(tex1, texcoord1-y1);
+	grady += texture(tex0, texcoord0+y1)-texture(tex0, texcoord0-y1);
 	
 	vec4 gradmag = sqrt((gradx*gradx)+(grady*grady)+vec4(lambda));
 
@@ -52,5 +56,5 @@ void main()
 	//format output for flowrepos, out(-x,+x,-y,+y)
 	vec2 yout = vec2(max(vyd,0.),abs(min(vyd,0.)))*scale.y;
 	
-	gl_FragColor = vec4(xout.xy,yout.xy);
+	color = vec4(xout.xy,yout.xy);
 }
