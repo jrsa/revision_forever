@@ -35,7 +35,7 @@ public:
     int w, h, out_w, out_h;
     float x_off, y_off, w_off, h_off;
     
-    bool record;
+    bool record, seed;
     float framerate;
     string filename;
     string container;
@@ -47,12 +47,14 @@ public:
     ofPixels record_pix;
     
     ofxTLVideoTrack *videoTrack;
-        
-    ofTexture vid_in, lastTex;
-    ofImage lastFrame, greyImg;
 
-    ofShader goopBack;
-    ofFbo goopBack_fbo;
+    ofTexture *vid_in;
+    int write_vid_in = 0;
+    int read_vid_in = 0;
+    int n_vid_in = 2;
+    // ofImage lastFrame, greyImg;
+
+    ofShader noise;
 
     ofShader flow, repos, blurX, blurY;
     ofFbo flow_fbo, repos_fbo, blurX_fbo, blurY_fbo;
